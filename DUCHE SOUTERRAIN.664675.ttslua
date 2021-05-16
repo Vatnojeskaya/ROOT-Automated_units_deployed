@@ -1,0 +1,336 @@
+
+
+rotate = false
+
+
+function onLoad()
+
+	guid_bag = self.getGUID()
+
+	params = {
+        function_owner = self,
+        rotation       = {10, 180, 0},
+        width          = 600,
+        height         = 300,
+        font_size      = 150,
+        color          = {0, 0, 0},
+        font_color     = {1, 1, 1}
+    }
+
+    params.click_function = 'toFold'
+    params.label = 'Ranger'
+    params.position = {0, -0.4, -1}
+	  self.createButton(params)
+
+		params.click_function = 'whereLocal'
+    params.label = 'local'
+    params.position = {3, 0.1, -0.5}
+	  --self.createButton(params)
+
+end
+
+function whereLocal ()
+
+	local central_guid = '22a3b3'
+
+	local pos_central = getObjectFromGUID(guid_bag).positionToLocal({3.05, 1.38, -48.76})
+  local pos_support_guerrier = getObjectFromGUID(guid_bag).positionToLocal({-14.66, 1.46, -49.73})
+	local pos_dice = getObjectFromGUID(guid_bag).positionToLocal({18.19, 2.19, -42.83})
+	local pos_mise_en_place = getObjectFromGUID(guid_bag).positionToLocal({-14.89, 1.46, -57.36})
+	local pos_fabrication = getObjectFromGUID(guid_bag).positionToLocal({16.40, 1.51, -55.00})
+	local pos_tile = getObjectFromGUID(guid_bag).positionToLocal({-1.78, 1.39, -38.65})
+  local pos_pv = getObjectFromGUID(guid_bag).positionToLocal({-12.40, 1.53, -61.14})
+	local pos_token_on_central = getObjectFromGUID(central_guid).positionToLocal({7.38, 1.60, -51.41})
+  local pos_token_on_central2 = getObjectFromGUID(central_guid).positionToLocal({7.04, 1.52, -57.93})
+  --local pos_token_on_central3 = getObjectFromGUID(central_guid).positionToLocal({0.42, 1.49, -54.62})
+	--local pos_token_on_tile_1 = getObjectFromGUID('04ec1e').positionToLocal({-19.71, 1.53, -56.11})
+
+	log(pos_central,'pos_central')
+  log(pos_support_guerrier,'pos_support_guerrier')
+	log(pos_fabrication,'pos_fabrication')
+  log(pos_pv,'pv')
+	log(pos_tile,'pos_tile')
+	log(pos_dice,'pos_dice')
+	log(pos_mise_en_place,'pos_mise_en_place')
+	log(pos_token_on_central,'pos_token_on_central')
+  log(pos_token_on_central2,'pos_token_on_central2')
+  --log(pos_token_on_central3,'pos_token_on_central3')
+	--log(pos_token_on_tile_1,'pos_token_on_tile_1')
+
+
+end
+
+
+
+function onObjectDrop(_, dropped_object)
+
+	if dropped_object.guid == guid_bag then
+
+		local pos_bag = self.getPosition()
+		if ((pos_bag.z < -26) and (pos_bag.z > -30)) or ((pos_bag.z < 30) and (pos_bag.z > 26))  then
+
+			if ((pos_bag.x < -62.5) and (pos_bag.x > -67)) or ((pos_bag.x < 2) and (pos_bag.x > -2)) or ((pos_bag.x < 66.5) and (pos_bag.x > 62)) then
+
+				self.shuffle()
+				Wait.time(function () toDeployed() end, 0.5)
+
+			end
+		end
+	end
+end
+
+
+
+function takeTheObject(position_of_the_object, guid_of_object)
+
+	local params = {
+		position = position_of_the_object,
+		guid = guid_of_object
+	}
+
+	if rotate == false then
+		params.rotation = {0, 180, 0}
+	elseif rotate == true then
+		params.rotation = {0, 0, 0}
+	end
+
+	self.takeObject(params)
+end
+
+
+
+function toMoveTile (pos, guid)
+
+	local pos_tile = getObjectFromGUID(guid_bag).positionToWorld(pos)
+	takeTheObject(pos_tile, guid)
+	table.insert(fold_guid, guid)
+
+end
+
+
+
+function toCleanUpPions(x,guid)
+
+	table.insert(all_pions[x], guid)
+	table.insert(fold_guid, guid)
+
+end
+
+
+
+function toMovePions(nb_of_lines, first_pion, k, pos_y, pions, nb_of_rows, guid)
+
+	for j = 1, (nb_of_lines*nb_of_rows) do
+
+		takeTheObject((getObjectFromGUID(guid).positionToWorld({first_pion[1] + k*((j-1)%nb_of_rows), pos_y, -first_pion[2] - k*(((j-1)-(j-1)%nb_of_rows)/nb_of_rows)})), pions[j])
+
+	end
+end
+
+
+
+function toDeployed()
+
+	fold_guid = {}
+
+	local obj_in_bag = self.getObjects()
+	all_pions = {{},{},{},{},{},{},{},{},{}}
+	central_board = ''
+	warrior_board = ''
+
+  local y = 0.1
+
+	local bag_pos = self.getPosition()
+
+	if bag_pos.z > 28 and bag_pos.z < 29 then
+		rotate = true
+	else
+		rotate = false
+	end
+
+  local n = #obj_in_bag
+  if n ~= 0 then
+
+    for k, value in pairs(obj_in_bag) do
+
+  		if value.name == 'Plateau Joueur' then
+  			toMoveTile({0.71, y, -11}, value.guid)
+  			central_board = value.guid
+
+      elseif value.name == 'Réserve de Guerriers' then
+        toMoveTile({-7, y, -8.36}, value.guid)
+        warrior_board = value.guid
+
+      elseif value.name == 'PV' then
+        toMoveTile({-2, y, -0.5}, value.guid)
+
+      elseif value.name == 'Fabrications persistantes' then
+        toMoveTile({7.5, y, -11}, value.guid)
+
+      elseif value.name == 'Piste élection' then
+        toMoveTile({0.71, y, -3.23}, value.guid)
+
+      elseif value.name == 'Terrier' then
+        toMoveTile({-7, y, -15}, value.guid)
+
+      elseif value.tag == 'Card' then
+        toMoveTile({3, 0.5, -11}, value.guid)
+
+      elseif value.name == 'Dé' then
+        toCleanUpPions(1, value.guid)
+
+      elseif value.name == 'Guerrier' then
+        toCleanUpPions(2, value.guid)
+
+  		elseif value.name == 'Mise en place' then
+        toCleanUpPions(3, value.guid)
+
+      elseif value.name == 'Couronne Chatelain' then
+        toCleanUpPions(4, value.guid)
+
+      elseif value.name == 'Couronne Noble' then
+        toCleanUpPions(5, value.guid)
+
+			elseif value.name == 'Couronne Seigneur' then
+				toCleanUpPions(6, value.guid)
+
+			elseif value.name == 'Tunnel' then
+				toCleanUpPions(7, value.guid)
+
+      elseif value.name == 'Citadelle' then
+        toCleanUpPions(8, value.guid)
+
+      elseif value.name == 'Marché' then
+        toCleanUpPions(9, value.guid)
+
+			elseif value.name == 'Ministre' then
+			toMoveTile({2.7, 0.5, -12.7}, value.guid)
+
+
+    	end
+  	end
+
+    Wait.time(function () takeThePions(all_pions) end, 2)
+
+  end
+
+end
+
+
+
+
+function takeThePions(table_pions)
+
+	local pos_y = 0.7
+	for i = 1,9 do
+
+		local pions = table_pions[i]
+
+		if i == 1 then  --Dé
+
+			local k = 0.5
+			local nb_of_lines = 1
+			local first_pion = {3.7, 6.5}
+			local nb_of_rows = 2
+
+			toMovePions(nb_of_lines, first_pion, k, pos_y, pions, nb_of_rows, guid_bag)
+
+		elseif i == 2 then --Guerrier
+
+      local k = -0.6
+			local nb_of_lines = 4
+			local first_pion = {1.2, 1.2}
+			local nb_of_rows = 5
+
+			toMovePions(nb_of_lines, first_pion, k, pos_y, pions, nb_of_rows, warrior_board)
+
+    elseif i == 3 then  --mise en place
+
+      local k = 1.7
+			local nb_of_lines = 1
+			local first_pion = {-7, 12}
+			local nb_of_rows = 1
+
+			toMovePions(nb_of_lines, first_pion, k, pos_y, pions, nb_of_rows, guid_bag)
+
+    elseif i == 4 then --tokens on central tile
+
+      local k = -0.11
+			local nb_of_lines = 1
+			local first_pion = {1.06, -0.345}
+			local nb_of_rows = 3
+
+			toMovePions(nb_of_lines, first_pion, k, pos_y, pions, nb_of_rows, central_board)
+
+    elseif i == 5 then
+
+      local k = -0.11
+      local nb_of_lines = 1
+      local first_pion = {0.65, -0.345}
+      local nb_of_rows = 3
+
+      toMovePions(nb_of_lines, first_pion, k, pos_y, pions, nb_of_rows, central_board)
+
+		elseif i == 6 then
+
+			local k = -0.11
+			local nb_of_lines = 1
+			local first_pion = {0.24, -0.345}
+			local nb_of_rows = 3
+
+			toMovePions(nb_of_lines, first_pion, k, pos_y, pions, nb_of_rows, central_board)
+
+		elseif i == 7 then
+
+			local k = -0.19
+			local nb_of_lines = 3
+			local first_pion = {-1.15, 0.32}
+			local nb_of_rows = 1
+
+			toMovePions(nb_of_lines, first_pion, k, pos_y, pions, nb_of_rows, central_board)
+
+    elseif i == 8 then
+
+      local k = -0.18
+      local nb_of_lines = 1
+      local first_pion = {-0.445, 0.297}
+      local nb_of_rows = 3
+
+      toMovePions(nb_of_lines, first_pion, k, pos_y, pions, nb_of_rows, central_board)
+
+    elseif i == 9 then
+
+      local k = -0.18
+      local nb_of_lines = 1
+      local first_pion = {-0.445, 0.094}
+      local nb_of_rows = 3
+
+      toMovePions(nb_of_lines, first_pion, k, pos_y, pions, nb_of_rows, central_board)
+
+		end
+	end
+
+	Wait.time(function() moveCentralTile() end, 3)
+end
+
+function moveCentralTile()
+
+	local pos_central_board = getObjectFromGUID(central_board).getPosition()
+	getObjectFromGUID(central_board).setPositionSmooth({pos_central_board.x, pos_central_board.y+0.02, pos_central_board.z})
+
+end
+
+
+function toFold()
+
+	local n = #fold_guid
+
+	if n ~= 0 then
+		for i = 1,n do
+			self.putObject(getObjectFromGUID(fold_guid[i]))
+		end
+	end
+
+	fold_guid = {}
+
+end
